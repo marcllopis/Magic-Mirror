@@ -1,5 +1,5 @@
 // @ts-nocheck
- 
+
 import React, { Component } from 'react';
 import Room from '../components/Room';
 import ThemeProvider from '../components/ThemeProvider';
@@ -36,6 +36,10 @@ class RoomViewComponent extends Component<Props> {
               Screensaver={screensaver}
               thumbnail={thumbnail === false ? false : true}
               callback={callback}
+              toggleThumbnail={this.props.toggleThumbnail}
+              toggleExternalVideo={this.props.toggleExternalVideo}
+              userName={this.props.userName}
+              userCity={this.props.userCity}
             />}
         </div>
       </ThemeProvider>

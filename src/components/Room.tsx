@@ -13,6 +13,8 @@ import {
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import styled from 'styled-components';
+import Draggable from 'react-draggable'; // The default
+
 import HiddenPeers from '../utils/contexts/HiddenPeers';
 import mq from '../utils/styles/media-queries';
 import Haircheck from './Haircheck';
@@ -53,6 +55,33 @@ const LoadingState = styled.div({
   position: 'relative'
 });
 
+const ButtonNavbar = styled.div({
+  position: 'absolute',
+  top: '80%',
+  left: '5%',
+  zindex: 100,
+  width: '80%',
+  height: '100px',
+  background: 'white',
+  marginBottom: '20px',
+  border: '1px solid blue',
+});
+
+const ButtonMagic = styled.div({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  zindex: 100,
+});
+
+const WeatherWidget = styled.div({
+  position: 'absolute',
+  top: '10%',
+  left: '30%',
+  zindex: 100,
+  color: 'white',
+});
+
 const MirrorState = styled.div({
   position: 'absolute',
   top: 0,
@@ -61,6 +90,7 @@ const MirrorState = styled.div({
   width: '100%',
   height: '100%',
   background: 'black',
+  color: 'white',
 });
 
 interface Props {
@@ -97,6 +127,8 @@ class Index extends Component<Props, State> {
       sendRtt: false,
       chatOpen: false,
       hiddenPeers: [],
+      weather: '',
+      quote: ''
     };
   }
 
@@ -111,6 +143,22 @@ class Index extends Component<Props, State> {
     } else if (!this.props.myVideo && this.props.pauseVideo) {
       this.props.pauseVideo();
     }
+  }
+
+  public componentDidMount() {
+    Promise.all([
+      fetch(`http://api.openweathermap.org/data/2.5/weather?q=${this.props.userCity}&units=metric&appid=cb5b8421741e0395e20819cb82ecb9d1`),
+      fetch("https://type.fit/api/quotes")
+    ])
+      .then(([res1, res2]) => {
+        return Promise.all([res1.json(), res2.json()])
+      })
+      .then(([data1, data2]) => {
+        this.setState({
+          weather: data1,
+          quote: data2[0].text
+        })
+      })
   }
 
   public render() {
@@ -164,11 +212,15 @@ class Index extends Component<Props, State> {
                       </Failed>
                       <Connected>
                         {room.joined && this.props.externalVideo ? (
-                          <PeerGrid
-                            roomAddress={room.address!}
-                            activeSpeakerView={this.state.activeSpeakerView}
-                            setPassword={this.setPassword}
-                          />
+                          <div>
+                            <PeerGrid
+                              roomAddress={room.address!}
+                              activeSpeakerView={this.state.activeSpeakerView}
+                              setPassword={this.setPassword}
+                            />
+                            <ButtonNavbar><button onClick={this.props.toggleThumbnail}>Toggle Thumbnail</button> <button onClick={() => this.props.toggleExternalVideo(false)}>Go Magic Mirror!</button></ButtonNavbar>
+                          </div>
+
                         ) : room.passwordRequired ? (
                           <PasswordEntryContainer>
                             <PasswordEntry
@@ -196,7 +248,23 @@ class Index extends Component<Props, State> {
                         ) : !this.props.externalVideo && (
                           <>
                             {Screensaver && <Screensaver />}
-                            {!Screensaver && <MirrorState />}
+                            {!Screensaver &&
+                              <MirrorState>
+                                {
+                                  this.state.weather &&
+                                  <Draggable>
+                                    <WeatherWidget>
+                                      <h1>Hello {this.props.userName}</h1>
+                                      <h2>{this.state.weather.name}</h2>
+                                      <h3>{this.state.weather.weather[0].description}</h3>
+                                      <img style={{ width: '70px' }} src={`http://openweathermap.org/img/w/${this.state.weather.weather[0].icon}.png`} alt='weather icon' /> {this.state.weather.main.temp}º
+                                    <h3>{this.state.quote}</h3>
+                                    </WeatherWidget>
+                                  </Draggable>
+                                }
+                                <ButtonMagic><button onClick={() => this.props.toggleExternalVideo(true)}>Go back to the conference room</button></ButtonMagic>
+                              </MirrorState>
+                            }
                           </>
                         )}
                       </Connected>
